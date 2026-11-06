@@ -43,6 +43,13 @@ npx prisma migrate dev && npm run prisma:seed && npm run dev
 - Dominio dedicato: aggiungerlo in Settings → Pages → Custom domain e impostare la variabile di repo `VITE_BASE` = `/`.
 - GitHub Pages ospita solo il frontend statico: il backend va su Railway/Render (vedi `docs/DEPLOY.md`).
 
+## Da fare prima del go-live
+
+- **Scegliere il nome definitivo**: "Tris" è anche il nome di una scommessa ippica nazionale e va evitato (vedi la ricerca di mercato); cambiare `BRAND` in `apps/web/src/config/brand.ts`
+- Mettere online il backend (`docs/DEPLOY.md`) e impostare `VITE_API_URL`
+- Aggiungere nell'area profilo la **funzione di recesso online** richiesta dal nuovo art. 54-bis del Codice del Consumo (in vigore dal 19 giugno 2026) e la casella di rinuncia al recesso per i contenuti digitali al checkout
+- Far validare a un legale testi legali, contratto di staking e informativa KYC; fare la DPIA
+
 ## Da sostituire prima del lancio
 
 - Statistiche e risultati dei fondatori (segnati con l'etichetta "esempio"): `apps/web/src/data/coaches.ts`
