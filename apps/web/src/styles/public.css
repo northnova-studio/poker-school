@@ -1,0 +1,336 @@
+/*
+ * STILI DEL SITO PUBBLICO — importato solo da PublicLayout.
+ * Regola: nessun colore esadecimale. Tutto deriva dai token di index.css
+ * (var(--c-*)), così il Brand Lab cambia l'aspetto di ogni pagina.
+ * Le poche variabili --pub-* sono derivate dai token e ridefinite per il
+ * tema chiaro "varianza".
+ */
+
+:root {
+  --pub-felt-line: color-mix(in oklab, var(--c-ink) 3%, transparent);
+  --pub-card-face: var(--c-ink);
+  --pub-card-ink: var(--c-bg);
+  --pub-card-red: color-mix(in oklab, var(--c-accent-2) 88%, var(--c-bg));
+  --pub-shadow: color-mix(in oklab, black 55%, transparent);
+  --pub-shadow-soft: color-mix(in oklab, black 30%, transparent);
+  --pub-night: color-mix(in oklab, var(--c-bg) 78%, black);
+  --pub-night-ink: var(--c-ink);
+  --pub-night-muted: var(--c-muted);
+  --pub-glow: color-mix(in oklab, var(--c-accent) 18%, transparent);
+  --pub-night-accent: var(--c-accent);
+  --pub-max: 88rem;
+}
+
+[data-theme="varianza"] {
+  --pub-felt-line: color-mix(in oklab, var(--c-ink) 4%, transparent);
+  --pub-card-face: var(--c-surface);
+  --pub-card-ink: var(--c-ink);
+  --pub-card-red: var(--c-accent-2);
+  --pub-shadow: color-mix(in oklab, var(--c-ink) 22%, transparent);
+  --pub-shadow-soft: color-mix(in oklab, var(--c-ink) 10%, transparent);
+  --pub-night: var(--c-ink);
+  --pub-night-ink: var(--c-bg);
+  --pub-night-muted: color-mix(in oklab, var(--c-bg) 70%, var(--c-ink));
+  --pub-glow: color-mix(in oklab, var(--c-accent-3) 22%, transparent);
+  --pub-night-accent: var(--c-accent-3);
+}
+
+@layer components {
+  /* ── Contenitore e ritmo ─────────────────────────────────────────────── */
+  .pub-wrap {
+    width: 100%;
+    max-width: var(--pub-max);
+    margin-inline: auto;
+    padding-inline: 1.25rem;
+  }
+  @media (min-width: 768px) {
+    .pub-wrap { padding-inline: 2.5rem; }
+  }
+
+  /* ── Panno da tavolo ─────────────────────────────────────────────────── */
+  .pub-felt {
+    background-color: var(--c-surface);
+    background-image:
+      repeating-linear-gradient(45deg, var(--pub-felt-line) 0 2px, transparent 2px 6px),
+      repeating-linear-gradient(-45deg, var(--pub-felt-line) 0 1px, transparent 1px 7px);
+  }
+
+  /* Luce della lampada sopra il tavolo: segue --mx / --my */
+  .pub-lamp {
+    background-image: radial-gradient(
+      42rem circle at var(--mx, 72%) var(--my, 28%),
+      var(--pub-glow),
+      transparent 62%
+    );
+  }
+
+  /* ── Tipografia display ──────────────────────────────────────────────── */
+  .pub-display {
+    font-family: var(--f-display);
+    font-weight: 900;
+    line-height: 0.88;
+    letter-spacing: -0.035em;
+  }
+  [data-theme="tris"] .pub-display,
+  :root:not([data-theme]) .pub-display {
+    font-stretch: 118%;
+  }
+  [data-theme="varianza"] .pub-display {
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 0.92;
+  }
+  [data-theme="scuderia"] .pub-display {
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+  }
+  [data-theme="lobby"] .pub-display {
+    font-weight: 800;
+    letter-spacing: -0.04em;
+  }
+  [data-theme="ranked"] .pub-display {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .pub-h2 {
+    font-family: var(--f-display);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    font-size: clamp(2.25rem, 5.4vw, 4.75rem);
+  }
+  [data-theme="tris"] .pub-h2 { font-stretch: 108%; }
+  [data-theme="varianza"] .pub-h2 { font-weight: 400; letter-spacing: -0.015em; }
+  [data-theme="scuderia"] .pub-h2 { text-transform: uppercase; letter-spacing: -0.005em; }
+
+  .pub-h3 {
+    font-family: var(--f-display);
+    font-weight: 800;
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+  }
+  [data-theme="tris"] .pub-h3 { font-stretch: 104%; }
+  [data-theme="varianza"] .pub-h3 { font-weight: 400; letter-spacing: -0.01em; }
+
+  .pub-lede {
+    font-size: clamp(1.05rem, 1.35vw, 1.25rem);
+    line-height: 1.55;
+    color: var(--c-muted);
+    max-width: 38rem;
+  }
+
+  /* Hero: reveal per lettera con allargamento (asse wdth di Archivo) */
+  .pub-split-char {
+    display: inline-block;
+    transform: translateY(105%) rotate(6deg);
+    opacity: 0;
+    animation: pub-char-in 0.9s var(--ease-out-expo) forwards;
+    animation-delay: calc(var(--i) * 28ms + var(--d, 0ms));
+  }
+  .pub-split-line { display: block; overflow: hidden; padding-bottom: 0.06em; }
+  [data-theme="tris"] .pub-hero-title .pub-split-char {
+    font-stretch: 70%;
+    animation-name: pub-char-in-wide;
+  }
+
+  /* ── Carte da gioco ──────────────────────────────────────────────────── */
+  .pub-card {
+    background: var(--pub-card-face);
+    color: var(--pub-card-ink);
+    border-radius: 0.55rem;
+    box-shadow:
+      0 1px 0 color-mix(in oklab, var(--pub-card-face) 60%, white) inset,
+      0 30px 60px -22px var(--pub-shadow),
+      0 10px 20px -12px var(--pub-shadow-soft);
+  }
+  .pub-card-back {
+    background-color: var(--c-accent-2);
+    background-image:
+      repeating-linear-gradient(45deg, color-mix(in oklab, var(--c-bg) 22%, transparent) 0 3px, transparent 3px 9px),
+      repeating-linear-gradient(-45deg, color-mix(in oklab, var(--c-bg) 22%, transparent) 0 3px, transparent 3px 9px);
+    border: 0.45rem solid var(--pub-card-face);
+    border-radius: 0.55rem;
+  }
+
+  /* Hero: la mano servita (CSS, nessuna dipendenza JS) */
+  .pub-deal {
+    opacity: 0;
+    transform: translate(var(--from-x, 40vw), -40vh) rotate(-30deg) scale(0.9);
+    animation: pub-deal-in 0.75s var(--ease-out-expo) forwards;
+    animation-delay: var(--deal-delay, 0ms);
+  }
+  .pub-flip {
+    transform-style: preserve-3d;
+    transform: rotateY(180deg);
+    animation: pub-flip 0.7s var(--ease-out-expo) forwards;
+    animation-delay: var(--flip-delay, 900ms);
+  }
+  .pub-face, .pub-backface {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  .pub-backface { transform: rotateY(180deg); }
+  .pub-fan {
+    transform: rotate(0deg) translateX(0);
+    animation: pub-fan 0.9s var(--ease-out-expo) forwards;
+    animation-delay: var(--fan-delay, 1500ms);
+  }
+
+  /* Linea del grafico che si disegna */
+  .pub-draw {
+    stroke-dasharray: var(--len, 2000);
+    stroke-dashoffset: var(--len, 2000);
+    animation: pub-draw 2.6s var(--ease-in-out-quint) forwards;
+    animation-delay: var(--draw-delay, 400ms);
+  }
+
+  .pub-fade-in {
+    opacity: 0;
+    animation: pub-fade 0.9s ease forwards;
+    animation-delay: var(--d, 0ms);
+  }
+
+  /* ── Fiches ──────────────────────────────────────────────────────────── */
+  .pub-chip-drop {
+    opacity: 0;
+    transform: translateY(-120px);
+  }
+  .pub-in-view .pub-chip-drop {
+    animation: pub-chip-drop 0.55s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
+    animation-delay: calc(var(--i) * 70ms + var(--d, 0ms));
+  }
+
+  /* ── Player card (stile FUT) ─────────────────────────────────────────── */
+  .pub-fut {
+    --rx: 0deg;
+    --ry: 0deg;
+    --gx: 50%;
+    --gy: 30%;
+    transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry));
+    transition: transform 0.5s var(--ease-out-expo);
+    transform-style: preserve-3d;
+  }
+  .pub-fut[data-active="true"] { transition-duration: 0.08s; }
+  .pub-fut-shape {
+    clip-path: polygon(14% 0, 86% 0, 100% 7%, 100% 86%, 50% 100%, 0 86%, 0 7%);
+  }
+  .pub-fut-face {
+    background-color: color-mix(in oklab, var(--c-accent) 20%, var(--c-surface));
+    background-image:
+      radial-gradient(30rem circle at var(--gx) var(--gy), color-mix(in oklab, var(--c-accent) 34%, transparent), transparent 55%),
+      repeating-linear-gradient(115deg, color-mix(in oklab, var(--c-ink) 4%, transparent) 0 1px, transparent 1px 9px);
+  }
+  .pub-fut-rim {
+    background: linear-gradient(160deg, var(--c-accent), color-mix(in oklab, var(--c-accent) 40%, var(--c-bg)) 45%, var(--c-accent));
+  }
+
+  /* ── Slot vuoto per screenshot (crocini di taglio) ───────────────────── */
+  .pub-slot {
+    background-color: var(--c-surface);
+    background-image:
+      linear-gradient(var(--c-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--c-line) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: -1px -1px;
+  }
+  .pub-crop { position: absolute; width: 18px; height: 18px; border-color: var(--c-accent); }
+  .pub-crop.tl { top: 10px; left: 10px; border-top-width: 2px; border-left-width: 2px; }
+  .pub-crop.tr { top: 10px; right: 10px; border-top-width: 2px; border-right-width: 2px; }
+  .pub-crop.bl { bottom: 10px; left: 10px; border-bottom-width: 2px; border-left-width: 2px; }
+  .pub-crop.br { bottom: 10px; right: 10px; border-bottom-width: 2px; border-right-width: 2px; }
+
+  /* ── Lobby: notte ────────────────────────────────────────────────────── */
+  .pub-night {
+    background-color: var(--pub-night);
+    color: var(--pub-night-ink);
+    background-image:
+      radial-gradient(40rem circle at 18% 30%, color-mix(in oklab, var(--c-accent) 26%, transparent), transparent 60%),
+      radial-gradient(36rem circle at 82% 70%, color-mix(in oklab, var(--c-accent-2) 30%, transparent), transparent 60%);
+  }
+  .pub-night .pub-night-muted { color: var(--pub-night-muted); }
+
+  /* ── Link sottolineato a mano ────────────────────────────────────────── */
+  .pub-link {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-size: 0% 1px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size 0.35s var(--ease-out-expo), color 0.2s;
+  }
+  .pub-link:hover, .pub-link:focus-visible { background-size: 100% 1px; }
+
+  /* Marquee (striscia HUD) */
+  .pub-marquee { animation: pub-marquee 40s linear infinite; }
+
+  /* Accordion con altezza animata (grid trick) */
+  .pub-acc { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.45s var(--ease-out-expo); }
+  .pub-acc[data-open="true"] { grid-template-rows: 1fr; }
+  .pub-acc > div { overflow: hidden; min-height: 0; }
+  .pub-acc[data-open="false"] > div { visibility: hidden; transition: visibility 0s 0.45s; }
+
+  /* Dropdown e menu mobile: transizioni CSS (niente JS di animazione nel bundle iniziale) */
+  .pub-pop { opacity: 0; transform: translateY(-6px); visibility: hidden; transition: opacity .22s var(--ease-out-expo), transform .22s var(--ease-out-expo), visibility 0s .22s; }
+  .pub-pop[data-open="true"] { opacity: 1; transform: none; visibility: visible; transition-delay: 0s; }
+  .pub-menu { clip-path: circle(0% at calc(100% - 2.5rem) 2.25rem); visibility: hidden; transition: clip-path .6s var(--ease-in-out-quint), visibility 0s .6s; }
+  .pub-menu[data-open="true"] { clip-path: circle(150% at calc(100% - 2.5rem) 2.25rem); visibility: visible; transition: clip-path .6s var(--ease-in-out-quint), visibility 0s 0s; }
+  .pub-menu-item { opacity: 0; transform: translateY(28px); transition: opacity .4s ease, transform .5s var(--ease-out-expo); }
+  .pub-menu[data-open="true"] .pub-menu-item { opacity: 1; transform: none; transition-delay: calc(.18s + var(--i, 0) * 45ms); }
+
+  /* Sipario di transizione tra le pagine (animato con Motion) */
+  .pub-curtain { transform-origin: 50% 0%; transform: scaleY(0); pointer-events: none; }
+
+  /* Ruota spin */
+  .pub-wheel { transition: transform 3.6s cubic-bezier(0.12, 0.8, 0.1, 1); }
+
+  /* Scrollbar orizzontale discreta */
+  .pub-scroll-x { scrollbar-width: thin; scrollbar-color: var(--c-line) transparent; }
+
+  /* Movimento ridotto: niente ingressi, stato finale subito */
+  @media (prefers-reduced-motion: reduce) {
+    .pub-split-char, .pub-deal, .pub-flip, .pub-fan, .pub-fade-in, .pub-chip-drop, .pub-in-view .pub-chip-drop {
+      animation: pub-fade 0.4s ease forwards !important;
+      animation-delay: 0ms !important;
+      transform: none !important;
+    }
+    .pub-fan { transform: rotate(var(--fan-r, 0deg)) translateX(var(--fan-x, 0)) translateY(var(--fan-y, 0)) !important; opacity: 1; }
+    .pub-flip { transform: none !important; opacity: 1; }
+    .pub-draw { stroke-dashoffset: 0 !important; animation: none !important; }
+    .pub-marquee { animation: none !important; }
+    .pub-fut { transform: none !important; }
+    .pub-wheel { transition-duration: 0.01ms !important; }
+    .pub-menu-item { transform: none !important; }
+    [data-theme="tris"] .pub-hero-title .pub-split-char { font-stretch: 118% !important; }
+  }
+
+  .pub-lobby-layer { position: relative; min-height: 85svh; }
+  .pub-lobby[data-enhanced] { height: 100svh; }
+  .pub-lobby[data-enhanced] .pub-lobby-layer { position: absolute !important; inset: 0; min-height: 0; }
+
+  @media (min-width: 1024px) {
+    .pub-hscroll-viewport { overflow-x: auto; }
+    .pub-hscroll[data-enhanced] .pub-hscroll-viewport { overflow: visible; }
+  }
+
+}
+
+/* Keyframes */
+@keyframes pub-char-in {
+  to { transform: none; opacity: 1; }
+}
+@keyframes pub-char-in-wide {
+  70% { font-stretch: 122%; }
+  to { transform: none; opacity: 1; font-stretch: 118%; }
+}
+@keyframes pub-deal-in {
+  to { opacity: 1; transform: translate(0, 0) rotate(var(--rest, 0deg)); }
+}
+@keyframes pub-flip { to { transform: rotateY(0deg); } }
+@keyframes pub-fan {
+  to { transform: rotate(var(--fan-r, 0deg)) translateX(var(--fan-x, 0)) translateY(var(--fan-y, 0)); }
+}
+@keyframes pub-draw { to { stroke-dashoffset: 0; } }
+@keyframes pub-fade { to { opacity: 1; } }
+@keyframes pub-chip-drop { to { opacity: 1; transform: none; } }
+@keyframes pub-marquee { to { transform: translateX(-50%); } }

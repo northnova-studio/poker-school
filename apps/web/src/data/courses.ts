@@ -6,7 +6,17 @@ const ch = (title: string, lessons: [string, number, boolean?][], prefix: string
   lessons: lessons.map(([t, d, p], i) => ({ id: `${prefix}-${title.slice(0, 3).toLowerCase()}-${i + 1}`, title: t, durationMin: d, preview: !!p })),
 })
 const total = (chs: CourseChapter[]) => chs.reduce((a, c) => a + c.lessons.reduce((b, l) => b + l.durationMin, 0), 0)
+// id lezione univoci nel corso: i duplicati ricevono il suffisso "-b" (stessa regola del seed backend)
+function dedupe(chs: CourseChapter[]) {
+  const seen = new Set<string>()
+  for (const chapter of chs)
+    for (const l of chapter.lessons) {
+      while (seen.has(l.id)) l.id = `${l.id}-b`
+      seen.add(l.id)
+    }
+}
 function course(c: Omit<Course, 'durationMin'>): Course {
+  dedupe(c.chapters)
   return { ...c, durationMin: total(c.chapters) }
 }
 

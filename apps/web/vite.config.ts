@@ -13,17 +13,5 @@ export default defineConfig({
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   build: {
     target: 'es2022',
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('recharts') || id.includes('d3-')) return 'charts'
-            if (id.includes('gsap')) return 'gsap'
-            if (id.includes('motion') || id.includes('framer')) return 'motion'
-            if (id.includes('react-router')) return 'router'
-          }
-        },
-      },
-    },
   },
 })
