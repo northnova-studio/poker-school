@@ -1,0 +1,10 @@
+node_modules/
+dist/
+storage/
+coverage/
+# client Prisma generato (npm run prisma:generate)
+src/generated/
+.env
+.env.*
+!.env.example
+!.env.test.example

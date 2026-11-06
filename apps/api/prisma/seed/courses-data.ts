@@ -1,0 +1,210 @@
+// Catalogo corsi: copia di apps/web/src/data/courses.ts (stessi id, slug e id lezione,
+// così il frontend statico e il backend restano allineati). Prezzi provvisori — DA VALIDARE.
+// Nota: nel file del frontend il corso "Deep Run Lab" genera id lezione duplicati
+// (i capitoli "Deep run 1-5" e "Deep run 6-10" producono entrambi "dr-dee-N"):
+// qui i duplicati ricevono il suffisso "-b" per restare univoci.
+
+export interface SeedLesson {
+  id: string
+  title: string
+  durationMin: number
+  preview: boolean
+}
+export interface SeedChapter {
+  title: string
+  lessons: SeedLesson[]
+}
+export interface SeedCourse {
+  id: string
+  slug: string
+  title: string
+  subtitle: string
+  description: string
+  format: 'MTT' | 'SPIN' | 'CASH' | 'MENTAL' | 'ALL'
+  level: 'MICRO' | 'LOW' | 'MID' | 'HIGH'
+  coachId: string
+  priceEur: number
+  includedInPlans: ('base' | 'pro' | 'elite')[]
+  tags: string[]
+  coverSeed: string
+  bestseller?: boolean
+  isNew?: boolean
+  chapters: SeedChapter[]
+}
+
+const ch = (title: string, lessons: [string, number, boolean?][], prefix: string): SeedChapter => ({
+  title,
+  lessons: lessons.map(([t, d, p], i) => ({ id: `${prefix}-${title.slice(0, 3).toLowerCase()}-${i + 1}`, title: t, durationMin: d, preview: !!p })),
+})
+
+function dedupe(c: SeedCourse): SeedCourse {
+  const seen = new Set<string>()
+  for (const chapter of c.chapters)
+    for (const l of chapter.lessons) {
+      while (seen.has(l.id)) l.id = `${l.id}-b`
+      seen.add(l.id)
+    }
+  return c
+}
+
+export const COURSES: SeedCourse[] = [
+  {
+    id: 'crs-icm',
+    slug: 'icm-masterclass',
+    title: 'ICM Masterclass',
+    subtitle: 'Dalla bolla al final table senza regalare equity',
+    description:
+      'Bolla, pay jump, final table: il corso che trasforma il panico ICM in decisioni da reg. Spot reali dai deep run di Matteo, ranges di shove e call, gestione del big stack e del short stack.',
+    format: 'MTT',
+    level: 'MID',
+    coachId: 'c-matteo',
+    priceEur: 199,
+    includedInPlans: ['elite'],
+    tags: ['ICM', 'final table', 'bolla'],
+    coverSeed: 'icm',
+    bestseller: true,
+    chapters: [
+      ch('Fondamenti ICM', [['Perché le chip non sono soldi', 18, true], ['Risk premium spiegato bene', 24], ['Tool e workflow di studio', 16]], 'icm'),
+      ch('La bolla', [['Big stack: come fare pressione', 27], ['Medium stack: la zona più difficile', 31], ['Short stack: push/fold sotto pressione', 22]], 'icm'),
+      ch('Final table', [['Pay jump e ranges di call', 34], ['3 deep run commentati', 46], ['Heads-up per il titolo', 25]], 'icm'),
+    ],
+  },
+  {
+    id: 'crs-spin-method',
+    slug: 'spin-metodo-hyper',
+    title: 'Spin & Go: il metodo',
+    subtitle: 'Il sistema di Fabri per il formato hyper-turbo',
+    description:
+      'Ranges 3-handed, push/fold, heads-up a stack corti e gestione della varianza dei jackpot. Il corso da cui parte ogni spin player della scuola.',
+    format: 'SPIN',
+    level: 'LOW',
+    coachId: 'c-fabri',
+    priceEur: 149,
+    includedInPlans: ['elite'],
+    tags: ['3-handed', 'push/fold', 'varianza'],
+    coverSeed: 'spin',
+    bestseller: true,
+    chapters: [
+      ch('Il formato', [['Come si vince davvero agli spin', 15, true], ['Varianza e bankroll', 20]], 'spin'),
+      ch('3-handed', [['Ranges dal bottone', 28], ['Small blind: limp o raise?', 26], ['Difendere il big blind', 24]], 'spin'),
+      ch('Heads-up', [['HU a 25bb', 30], ['HU sotto i 12bb', 22], ['Errori che costano un buy-in', 19]], 'spin'),
+    ],
+  },
+  {
+    id: 'crs-spin-hu',
+    slug: 'spin-endgame-heads-up',
+    title: 'Spin endgame',
+    subtitle: 'Heads-up a 15bb come un regular high stakes',
+    description:
+      'Il punto in cui si decide il buy-in: strategie heads-up a stack corti, exploit sui pool italiani ed europei, review di mani di studenti.',
+    format: 'SPIN',
+    level: 'MID',
+    coachId: 'c-fabri',
+    priceEur: 129,
+    includedInPlans: ['elite'],
+    tags: ['heads-up', 'exploit'],
+    coverSeed: 'endgame',
+    isNew: true,
+    chapters: [
+      ch('Teoria', [['Equilibrio a 15bb', 21, true], ['Min-raise vs shove', 18]], 'hu'),
+      ch('Pratica', [['Exploit sui pool', 27], ['Review studenti #1', 33], ['Review studenti #2', 29]], 'hu'),
+    ],
+  },
+  {
+    id: 'crs-mtt-found',
+    slug: 'mtt-fondamenta',
+    title: 'MTT Fondamenta',
+    subtitle: 'Early e mid stage: costruire lo stack senza bruciarlo',
+    description:
+      'Il corso di base per i tornei: open ranges, 3-bet, gioco postflop in single raised pot, pianificazione delle sessioni e del volume.',
+    format: 'MTT',
+    level: 'MICRO',
+    coachId: 'c-matteo',
+    priceEur: 79,
+    includedInPlans: ['pro', 'elite'],
+    tags: ['fondamentali', 'preflop', 'postflop'],
+    coverSeed: 'found',
+    chapters: [
+      ch('Preflop', [['Open ranges per posizione', 22, true], ['3-bet e difese', 25]], 'mf'),
+      ch('Postflop', [['C-bet: quando e quanto', 27], ['Giocare fuori posizione', 23]], 'mf'),
+      ch('Sessione', [['Volume, grind e pause', 14]], 'mf'),
+    ],
+  },
+  {
+    id: 'crs-deeprun',
+    slug: 'deep-run-lab',
+    title: 'Deep Run Lab',
+    subtitle: '10 final table reali commentate mano per mano',
+    description:
+      'Matteo riapre i suoi deep run e quelli degli studenti: ogni spot chiave in pausa, i ragionamenti, gli errori e le alternative. Il corso più vicino a sedersi accanto a un high stakes reg.',
+    format: 'MTT',
+    level: 'HIGH',
+    coachId: 'c-matteo',
+    priceEur: 249,
+    includedInPlans: ['elite'],
+    tags: ['final table', 'high stakes', 'review'],
+    coverSeed: 'deeprun',
+    isNew: true,
+    chapters: [
+      ch('Deep run 1-5', [['FT #1: il big stack aggressivo', 41, true], ['FT #2: short stack fino al podio', 38], ['FT #3-5', 95]], 'dr'),
+      ch('Deep run 6-10', [['FT #6: heads-up per il titolo', 44], ['FT #7-10', 120]], 'dr'),
+    ],
+  },
+  {
+    id: 'crs-cash6',
+    slug: 'cash-6max-srp',
+    title: 'Cash 6-max: single raised pot',
+    subtitle: 'Il pane quotidiano del regular cash',
+    description: 'Strategie in single raised pot in posizione e fuori, sizing, linee di turn e river. Pensato per chi gioca NL10-NL50.',
+    format: 'CASH',
+    level: 'LOW',
+    coachId: 'c-staff',
+    priceEur: 119,
+    includedInPlans: ['elite'],
+    tags: ['6-max', 'postflop'],
+    coverSeed: 'cash',
+    chapters: [
+      ch('In posizione', [['C-bet range vs range', 24, true], ['Turn barrel', 26]], 'cs'),
+      ch('Fuori posizione', [['Check-raise', 23], ['River: thin value e bluff', 28]], 'cs'),
+    ],
+  },
+  {
+    id: 'crs-mental',
+    slug: 'mental-game-da-atleta',
+    title: 'Mental game da atleta',
+    subtitle: 'Tilt, routine e volume: il metodo esport applicato al poker',
+    description:
+      'Warm-up, cool-down, gestione del tilt, sonno e allenamento. Lorenzo porta nel poker il metodo che usava da pro player esport.',
+    format: 'MENTAL',
+    level: 'LOW',
+    coachId: 'c-lorenzo',
+    priceEur: 59,
+    includedInPlans: ['pro', 'elite'],
+    tags: ['tilt', 'routine', 'performance'],
+    coverSeed: 'mental',
+    chapters: [
+      ch('Routine', [['Warm-up di 15 minuti', 12, true], ['Cool-down e session review', 14]], 'mg'),
+      ch('Tilt', [['Riconoscere i tuoi trigger', 18], ['Il piano anti-tilt', 16]], 'mg'),
+      ch('Performance', [['Volume sostenibile', 15], ['Sonno, sport, focus', 17]], 'mg'),
+    ],
+  },
+  {
+    id: 'crs-solver',
+    slug: 'studio-con-solver',
+    title: 'Studiare con i solver',
+    subtitle: 'Un workflow di studio che non ti fa perdere ore',
+    description:
+      'Come usare i solver e i trainer GTO senza perdersi: scegliere gli spot, semplificare le strategie, trasformare lo studio in decisioni al tavolo.',
+    format: 'ALL',
+    level: 'MID',
+    coachId: 'c-matteo',
+    priceEur: 99,
+    includedInPlans: ['elite'],
+    tags: ['GTO', 'studio', 'workflow'],
+    coverSeed: 'solver',
+    chapters: [
+      ch('Metodo', [['Cosa studiare (e cosa no)', 19, true], ['Semplificare le strategie', 23]], 'sv'),
+      ch('Pratica', [['Dallo studio al tavolo', 21], ['Database e leak finder', 26]], 'sv'),
+    ],
+  },
+].map((c) => dedupe(c as SeedCourse))

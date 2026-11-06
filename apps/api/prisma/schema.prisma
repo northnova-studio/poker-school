@@ -1,0 +1,923 @@
+// Schema dati della scuola (Prisma 7, client "prisma-client" senza engine Rust,
+// driver adapter @prisma/adapter-pg). L'URL del database è in prisma.config.ts.
+// Importi in euro: Decimal(12,2) → convertiti in number nelle risposte API.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Enum ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  STUDENT
+  COACH
+  ADMIN
+}
+
+enum Format {
+  MTT
+  SPIN
+  CASH
+}
+
+enum CourseFormat {
+  MTT
+  SPIN
+  CASH
+  MENTAL
+  ALL
+}
+
+enum LessonFormat {
+  MTT
+  SPIN
+  CASH
+  MENTAL
+}
+
+enum Level {
+  MICRO
+  LOW
+  MID
+  HIGH
+}
+
+enum KycStatus {
+  NONE
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PlanId {
+  base
+  pro
+  elite
+}
+
+enum BillingInterval {
+  month
+  year
+}
+
+enum DocumentType {
+  ID_CARD
+  PASSPORT
+  DRIVING_LICENSE
+}
+
+enum KycProvider {
+  MANUAL
+  VERIFF
+  SUMSUB
+  DIDIT
+  ONFIDO
+}
+
+enum KycFileKind {
+  FRONT
+  BACK
+  SELFIE
+}
+
+enum KycAccessAction {
+  URL_ISSUED
+  FILE_SERVED
+  REVIEWED
+  FILES_PURGED
+  PROVIDER_WEBHOOK
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+}
+
+enum PaymentProvider {
+  STRIPE
+  MANUAL
+  DEMO
+}
+
+enum VideoProvider {
+  NONE
+  BUNNY
+}
+
+enum XpEventType {
+  SESSION_LOGGED
+  STUDY_HOURS
+  LESSON_ATTENDED
+  HAND_REVIEW_SUBMITTED
+  DAILY_SPOT_CORRECT
+  DAILY_SPOT_STREAK
+  DEEP_RUN
+  ROAST_VOTE
+  GAMING_NIGHT
+  COURSE_COMPLETED
+  BOUNTY_WON
+}
+
+enum SeasonStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum BadgeRarity {
+  COMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum RoastVoteKind {
+  WORST
+  BEST
+}
+
+enum DeepRunStatus {
+  LIVE
+  FINAL_TABLE
+  BUSTED
+  WON
+}
+
+enum GamingEventKind {
+  NIGHT
+  BOUNTY_1V1
+  TOURNAMENT
+}
+
+enum HandReviewStatus {
+  OPEN
+  IN_REVIEW
+  REVIEWED
+}
+
+enum StakingStatus {
+  ACTIVE
+  PAUSED
+  CLOSED
+}
+
+enum LedgerType {
+  TRANSFER_TO_PLAYER
+  RETURN_FROM_PLAYER
+  SESSION_RESULT
+  SETTLEMENT
+  ADJUSTMENT
+}
+
+enum TxType {
+  INCOME
+  EXPENSE
+}
+
+enum TxCategory {
+  MEMBERSHIP
+  COURSE
+  GROUP_LESSON
+  COACHING_1V1
+  STAKING
+  SPONSOR
+  TOOLS
+  HOSTING
+  MARKETING
+  VIDEO_PRODUCTION
+  COACH_PAYOUT
+  TRAVEL
+  KYC
+  FEES
+  TAXES
+  OTHER
+}
+
+enum TxSource {
+  MANUAL
+  STRIPE
+  SYSTEM
+}
+
+// ─── Utenti e autenticazione ────────────────────────────────────────────────
+
+model User {
+  id                   String           @id @default(cuid())
+  email                String           @unique
+  passwordHash         String
+  nickname             String           @unique
+  firstName            String
+  lastName             String
+  birthDate            DateTime         @db.Date
+  role                 Role             @default(STUDENT)
+  avatarSeed           String
+  formats              Format[]
+  mainLevel            Level            @default(MICRO)
+  kycStatus            KycStatus        @default(NONE)
+  plan                 PlanId?
+  planInterval         BillingInterval?
+  coachId              String?
+  discordHandle        String?
+  gamingTag            String?
+  bio                  String?
+  // consensi (GDPR): ogni consenso ha il suo timestamp e la versione del documento accettato
+  shareResultsPublicly Boolean          @default(false)
+  roastOptIn           Boolean          @default(false)
+  marketingOptIn       Boolean          @default(false)
+  marketingOptInAt     DateTime?
+  termsAcceptedAt      DateTime
+  termsVersion         String
+  privacyAcceptedAt    DateTime
+  privacyVersion       String
+  kycConsentAt         DateTime?
+  stripeCustomerId     String?          @unique
+  lastLoginAt          DateTime?
+  disabledAt           DateTime?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  coach    User?  @relation("CoachStudents", fields: [coachId], references: [id], onDelete: SetNull)
+  students User[] @relation("CoachStudents")
+
+  coachProfile        CoachProfile?
+  refreshTokens       RefreshToken[]
+  kycSubmissions      KycSubmission[]   @relation("KycOwner")
+  kycReviews          KycSubmission[]   @relation("KycReviewer")
+  subscriptions       Subscription[]
+  purchases           Purchase[]
+  lessonProgress      LessonProgress[]
+  coachedCourses      Course[]
+  coachedGroupLessons GroupLesson[]
+  bookings            Booking[]
+  sessions            Session[]
+  xpEvents            XpEvent[]
+  seasonStandings     SeasonStanding[]
+  badges              UserBadge[]
+  playerCard          PlayerCard?       @relation("CardOwner")
+  cardsUpdated        PlayerCard[]      @relation("CardUpdater")
+  dailySpotsAuthored  DailySpot[]
+  dailySpotAnswers    DailySpotAnswer[]
+  roastSpots          RoastSpot[]
+  roastVotes          RoastVote[]
+  deepRuns            DeepRun[]
+  deepRunRails        DeepRunRail[]
+  deepRunComments     DeepRunComment[]
+  hostedGamingEvents  GamingEvent[]
+  gamingParticipation GamingParticipant[]
+  handReviews         HandReview[]      @relation("HandReviewAuthor")
+  handReviewsCoached  HandReview[]      @relation("HandReviewCoach")
+  stakingDeals        StakingDeal[]     @relation("StakingPlayer")
+  stakingDealsCreated StakingDeal[]     @relation("StakingCreator")
+  ledgerEntries       LedgerEntry[]
+  transactions        Transaction[]     @relation("TransactionUser")
+  coachNotesReceived  CoachNote[]       @relation("NoteStudent")
+  coachNotesWritten   CoachNote[]       @relation("NoteAuthor")
+  auditLogs           AuditLog[]
+
+  @@index([role])
+  @@index([plan])
+  @@index([kycStatus])
+  @@index([coachId])
+  @@index([createdAt])
+}
+
+// Profilo pubblico dei coach (GET /public/coaches)
+model CoachProfile {
+  userId       String   @id
+  title        String // es. "Head coach Spin & Go"
+  stats        Json     @default("[]") // StatValue[] — placeholder: true finché non ci sono dati reali
+  displayOrder Int      @default(0)
+  isPublic     Boolean  @default(true)
+  isFounder    Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Refresh token opaco: in DB solo l'hash SHA-256. Rotazione a ogni uso;
+// il riuso di un token già ruotato revoca l'intera famiglia (furto sospetto).
+model RefreshToken {
+  id           String    @id @default(cuid())
+  userId       String
+  tokenHash    String    @unique
+  familyId     String
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  replacedById String?
+  userAgent    String?
+  ip           String?
+  createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([expiresAt])
+}
+
+// ─── KYC (dati sensibili) ───────────────────────────────────────────────────
+
+model KycSubmission {
+  id                  String       @id @default(cuid())
+  userId              String
+  documentType        DocumentType
+  documentNumberLast4 String // minimizzazione: solo le ultime 4 cifre
+  status              KycStatus    @default(PENDING)
+  provider            KycProvider  @default(MANUAL)
+  providerRef         String?      @unique
+  consentAt           DateTime
+  submittedAt         DateTime     @default(now())
+  reviewedAt          DateTime?
+  reviewerId          String?
+  rejectionReason     String?
+  filesPurgedAt       DateTime? // retention: file cancellati, restano esito e ultime 4 cifre
+  user                User         @relation("KycOwner", fields: [userId], references: [id], onDelete: Cascade)
+  reviewer            User?        @relation("KycReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  files               KycFile[]
+  accessLogs          KycAccessLog[]
+
+  @@index([userId])
+  @@index([status, submittedAt])
+  @@index([reviewedAt])
+}
+
+// File cifrato AES-256-GCM: in storage c'è solo il ciphertext.
+model KycFile {
+  id           String        @id @default(cuid())
+  submissionId String
+  kind         KycFileKind
+  storageKey   String
+  iv           String // base64, 12 byte
+  authTag      String // base64, 16 byte
+  mime         String
+  sizeBytes    Int
+  sha256       String // hash del contenuto in chiaro, verificato alla decifratura
+  createdAt    DateTime      @default(now())
+  submission   KycSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, kind])
+}
+
+// Registro accessi ai documenti (accountability GDPR art. 5.2): sopravvive alla cancellazione dei file.
+model KycAccessLog {
+  id           String          @id @default(cuid())
+  submissionId String
+  fileId       String?
+  actorId      String? // null = sistema (job retention / webhook provider)
+  action       KycAccessAction
+  ip           String?
+  userAgent    String?
+  createdAt    DateTime        @default(now())
+  submission   KycSubmission   @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@index([submissionId, createdAt])
+  @@index([actorId])
+}
+
+// ─── Piani, abbonamenti, corsi ──────────────────────────────────────────────
+
+model Plan {
+  id                 PlanId   @id
+  name               String
+  priceMonthly       Decimal  @db.Decimal(12, 2)
+  priceYearly        Decimal  @db.Decimal(12, 2)
+  tagline            String
+  features           String[]
+  highlighted        Boolean  @default(false)
+  sortOrder          Int      @default(0)
+  updatedAt          DateTime @updatedAt
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String
+  plan                 PlanId
+  interval             BillingInterval
+  status               SubscriptionStatus @default(ACTIVE)
+  provider             PaymentProvider    @default(STRIPE)
+  amountEur            Decimal            @db.Decimal(12, 2) // importo per intervallo (mese o anno)
+  stripeSubscriptionId String?            @unique
+  stripeCustomerId     String?
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  canceledAt           DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([canceledAt])
+}
+
+model Course {
+  id              String         @id @default(cuid())
+  slug            String         @unique
+  title           String
+  subtitle        String
+  description     String
+  format          CourseFormat
+  level           Level
+  coachId         String
+  priceEur        Decimal        @db.Decimal(12, 2)
+  includedInPlans PlanId[]
+  tags            String[]
+  coverSeed       String
+  bestseller      Boolean        @default(false)
+  isNew           Boolean        @default(false)
+  published       Boolean        @default(true)
+  stripePriceId   String? // opzionale: se assente il checkout usa price_data con priceEur
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  coach           User           @relation(fields: [coachId], references: [id], onDelete: Restrict)
+  chapters        CourseChapter[]
+  lessons         CourseLesson[]
+  purchases       Purchase[]
+  progress        LessonProgress[]
+
+  @@index([format, level])
+  @@index([published])
+}
+
+model CourseChapter {
+  id       String         @id @default(cuid())
+  courseId String
+  title    String
+  position Int
+  course   Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons  CourseLesson[]
+
+  @@unique([courseId, position])
+}
+
+model CourseLesson {
+  id            String           @id @default(cuid())
+  courseId      String
+  chapterId     String
+  title         String
+  durationMin   Int
+  preview       Boolean          @default(false)
+  position      Int
+  videoProvider VideoProvider    @default(NONE)
+  videoId       String? // es. GUID del video in Bunny Stream
+  course        Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  chapter       CourseChapter    @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  progress      LessonProgress[]
+
+  @@unique([chapterId, position])
+  @@index([courseId])
+}
+
+model Purchase {
+  id              String          @id @default(cuid())
+  userId          String
+  courseId        String
+  amountEur       Decimal         @db.Decimal(12, 2)
+  provider        PaymentProvider
+  stripeSessionId String?         @unique
+  createdAt       DateTime        @default(now())
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course          Course          @relation(fields: [courseId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, courseId])
+  @@index([courseId, createdAt])
+  @@index([createdAt])
+}
+
+model LessonProgress {
+  id          String       @id @default(cuid())
+  userId      String
+  courseId    String
+  lessonId    String
+  completedAt DateTime     @default(now())
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson      CourseLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId, courseId])
+  @@index([userId, completedAt])
+}
+
+// ─── Lezioni di gruppo ──────────────────────────────────────────────────────
+
+model GroupLesson {
+  id           String       @id @default(cuid())
+  title        String
+  description  String
+  format       LessonFormat
+  level        Level
+  coachId      String
+  startsAt     DateTime
+  durationMin  Int
+  capacity     Int
+  minPlan      PlanId
+  meetingUrl   String?
+  recordingUrl String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  coach        User         @relation(fields: [coachId], references: [id], onDelete: Restrict)
+  bookings     Booking[]
+
+  @@index([startsAt])
+}
+
+model Booking {
+  id         String      @id @default(cuid())
+  lessonId   String
+  userId     String
+  attendedAt DateTime? // impostato dal coach/admin (presenza → XP LESSON_ATTENDED)
+  createdAt  DateTime    @default(now())
+  lesson     GroupLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, userId])
+  @@index([userId])
+}
+
+// ─── Sessioni di gioco ──────────────────────────────────────────────────────
+
+model Session {
+  id          String       @id @default(cuid())
+  userId      String
+  date        DateTime
+  format      Format
+  durationMin Int
+  games       Int
+  itmCount    Int? // estensione: piazzamenti a premio (MTT/Spin) per un ITM% reale
+  hands       Int?
+  avgBuyIn    Decimal      @db.Decimal(12, 2)
+  totalBuyIns Decimal      @db.Decimal(12, 2)
+  totalCashes Decimal      @db.Decimal(12, 2)
+  profit      Decimal      @db.Decimal(12, 2)
+  chipEvBb100 Float?
+  bbWon       Float?
+  tilt        Int
+  badBeats    Int          @default(0)
+  bubbles     Int          @default(0)
+  deepRun     Boolean      @default(false)
+  notes       String?
+  staked      Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ledgerEntry LedgerEntry?
+
+  @@index([userId, date])
+  @@index([date])
+}
+
+// ─── Rank, XP, stagioni, badge ──────────────────────────────────────────────
+
+model Season {
+  id        String           @id @default(cuid())
+  number    Int              @unique
+  name      String // "Stagione N — Mese AAAA"
+  startsAt  DateTime
+  endsAt    DateTime
+  status    SeasonStatus     @default(ACTIVE)
+  closedAt  DateTime?
+  xpEvents  XpEvent[]
+  standings SeasonStanding[]
+
+  @@index([startsAt, endsAt])
+}
+
+// XP di partenza (soft reset 30%) e XP/posizione finali per utente e stagione
+model SeasonStanding {
+  id            String   @id @default(cuid())
+  seasonId      String
+  userId        String
+  carryoverXp   Int      @default(0)
+  finalXp       Int?
+  finalPosition Int?
+  season        Season   @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([seasonId, userId])
+}
+
+model XpEvent {
+  id        String      @id @default(cuid())
+  userId    String
+  seasonId  String
+  type      XpEventType
+  xp        Int
+  label     String
+  refId     String? // dedup: es. id del corso completato o del deep run
+  createdAt DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  season    Season      @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, refId])
+  @@index([seasonId, userId])
+  @@index([userId, type, createdAt])
+}
+
+model Badge {
+  id          String      @id @default(cuid())
+  key         String      @unique
+  name        String
+  description String
+  icon        String // nome icona lucide
+  rarity      BadgeRarity
+  sortOrder   Int         @default(0)
+  users       UserBadge[]
+}
+
+model UserBadge {
+  id       String   @id @default(cuid())
+  userId   String
+  badgeId  String
+  earnedAt DateTime @default(now())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge    Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+}
+
+model PlayerCard {
+  userId           String   @id
+  mainFormat       Format
+  pre              Int
+  post             Int
+  icm              Int
+  agg              Int
+  men              Int
+  vol              Int
+  volAuto          Boolean  @default(true) // true = Volume calcolato dagli ultimi 90 giorni
+  updatedByCoachId String?
+  updatedAt        DateTime @updatedAt
+  user             User     @relation("CardOwner", fields: [userId], references: [id], onDelete: Cascade)
+  updatedBy        User?    @relation("CardUpdater", fields: [updatedByCoachId], references: [id], onDelete: SetNull)
+}
+
+// ─── Community ──────────────────────────────────────────────────────────────
+
+model DailySpot {
+  id              String            @id @default(cuid())
+  date            DateTime          @unique @db.Date
+  format          Format
+  title           String
+  situation       String
+  heroCards       String
+  board           String?
+  stacksBb        String
+  options         Json // [{ id, label }]
+  correctOptionId String
+  explanation     String
+  coachId         String
+  createdAt       DateTime          @default(now())
+  coach           User              @relation(fields: [coachId], references: [id], onDelete: Restrict)
+  answers         DailySpotAnswer[]
+}
+
+model DailySpotAnswer {
+  id        String    @id @default(cuid())
+  spotId    String
+  userId    String
+  optionId  String
+  correct   Boolean
+  createdAt DateTime  @default(now())
+  spot      DailySpot @relation(fields: [spotId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([spotId, userId])
+  @@index([userId])
+}
+
+model RoastSpot {
+  id                String      @id @default(cuid())
+  weekId            String // "2026-W45" (settimana ISO, Europe/Rome)
+  title             String
+  description       String
+  format            Format
+  heroCards         String
+  board             String?
+  submittedByUserId String?
+  playedByMember    Boolean     @default(false)
+  founderComment    String?
+  hiddenAt          DateTime? // moderazione
+  createdAt         DateTime    @default(now())
+  submittedBy       User?       @relation(fields: [submittedByUserId], references: [id], onDelete: SetNull)
+  votes             RoastVote[]
+
+  @@index([weekId])
+}
+
+model RoastVote {
+  id        String        @id @default(cuid())
+  spotId    String
+  userId    String
+  kind      RoastVoteKind
+  createdAt DateTime      @default(now())
+  spot      RoastSpot     @relation(fields: [spotId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([spotId, userId])
+}
+
+model DeepRun {
+  id             String           @id @default(cuid())
+  userId         String
+  tournamentName String
+  buyIn          Decimal          @db.Decimal(12, 2)
+  playersLeft    Int
+  totalPlayers   Int
+  stackBb        Float
+  status         DeepRunStatus    @default(LIVE)
+  finishPosition Int?
+  startedAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rails          DeepRunRail[]
+  comments       DeepRunComment[]
+
+  @@index([status, updatedAt])
+  @@index([userId])
+}
+
+model DeepRunRail {
+  id        String   @id @default(cuid())
+  deepRunId String
+  userId    String
+  createdAt DateTime @default(now())
+  deepRun   DeepRun  @relation(fields: [deepRunId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([deepRunId, userId])
+}
+
+model DeepRunComment {
+  id        String   @id @default(cuid())
+  deepRunId String
+  userId    String
+  text      String
+  createdAt DateTime @default(now())
+  deepRun   DeepRun  @relation(fields: [deepRunId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([deepRunId, createdAt])
+}
+
+model GamingEvent {
+  id              String              @id @default(cuid())
+  kind            GamingEventKind
+  game            String
+  title           String
+  description     String
+  startsAt        DateTime
+  hostUserId      String
+  maxParticipants Int?
+  prize           String? // mai premi in denaro
+  createdAt       DateTime            @default(now())
+  host            User                @relation(fields: [hostUserId], references: [id], onDelete: Restrict)
+  participants    GamingParticipant[]
+
+  @@index([startsAt])
+}
+
+// Partecipazione + punteggi per la classifica gaming interna
+model GamingParticipant {
+  id            String      @id @default(cuid())
+  eventId       String
+  userId        String
+  points        Int         @default(0)
+  won           Boolean     @default(false)
+  bountyClaimed Boolean     @default(false) // ha battuto il fondatore in un BOUNTY_1V1
+  joinedAt      DateTime    @default(now())
+  event         GamingEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([userId])
+}
+
+model HandReview {
+  id           String           @id @default(cuid())
+  userId       String
+  format       Format
+  title        String
+  description  String
+  handHistory  String
+  status       HandReviewStatus @default(OPEN)
+  coachId      String?
+  coachComment String?
+  createdAt    DateTime         @default(now())
+  reviewedAt   DateTime?
+  user         User             @relation("HandReviewAuthor", fields: [userId], references: [id], onDelete: Cascade)
+  coach        User?            @relation("HandReviewCoach", fields: [coachId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+// ─── Staking / backing ──────────────────────────────────────────────────────
+
+model StakingDeal {
+  id             String        @id @default(cuid())
+  userId         String
+  format         Format
+  status         StakingStatus @default(ACTIVE)
+  startDate      DateTime
+  endDate        DateTime?
+  schoolSharePct Decimal       @db.Decimal(5, 2)
+  playerSharePct Decimal       @db.Decimal(5, 2)
+  maxAbi         Decimal?      @db.Decimal(12, 2)
+  notes          String?
+  createdById    String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  user           User          @relation("StakingPlayer", fields: [userId], references: [id], onDelete: Restrict)
+  createdBy      User?         @relation("StakingCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  entries        LedgerEntry[]
+
+  @@index([userId, status])
+  @@index([status])
+}
+
+// amount con segno: positivo = verso la scuola / risultato positivo
+model LedgerEntry {
+  id            String      @id @default(cuid())
+  dealId        String
+  date          DateTime
+  type          LedgerType
+  amount        Decimal     @db.Decimal(12, 2)
+  note          String?
+  createdById   String
+  sessionId     String?     @unique // SESSION_RESULT generato da una sessione staked
+  settledNet    Decimal?    @db.Decimal(12, 2) // SETTLEMENT: netto diviso
+  playerShare   Decimal?    @db.Decimal(12, 2) // SETTLEMENT: quota giocatore
+  createdAt     DateTime    @default(now())
+  deal          StakingDeal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  createdBy     User        @relation(fields: [createdById], references: [id], onDelete: Restrict)
+  session       Session?    @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([dealId, date])
+  @@index([type, date])
+}
+
+// ─── Finanze scuola ─────────────────────────────────────────────────────────
+
+model Transaction {
+  id          String      @id @default(cuid())
+  date        DateTime
+  type        TxType
+  category    TxCategory
+  amount      Decimal     @db.Decimal(12, 2) // sempre positivo; il segno lo dà type
+  description String
+  userId      String?
+  source      TxSource    @default(MANUAL)
+  externalRef String?     @unique // idempotenza (es. id sessione/fattura Stripe)
+  createdById String?
+  createdAt   DateTime    @default(now())
+  user        User?       @relation("TransactionUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([date])
+  @@index([type, category, date])
+}
+
+// Idempotenza webhook (Stripe, provider KYC)
+model WebhookEvent {
+  id         String   @id // id evento del provider
+  provider   String
+  type       String
+  receivedAt DateTime @default(now())
+}
+
+// ─── Gestionale ─────────────────────────────────────────────────────────────
+
+model CoachNote {
+  id        String   @id @default(cuid())
+  userId    String
+  authorId  String
+  text      String
+  createdAt DateTime @default(now())
+  user      User     @relation("NoteStudent", fields: [userId], references: [id], onDelete: Cascade)
+  author    User     @relation("NoteAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String // es. "kyc.review", "staking.settle", "user.update"
+  entity    String
+  entityId  String?
+  meta      Json?
+  ip        String?
+  createdAt DateTime @default(now())
+  actor     User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([entity, entityId])
+  @@index([actorId, createdAt])
+  @@index([createdAt])
+}

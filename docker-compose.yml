@@ -1,0 +1,63 @@
+# Ambiente locale completo: Postgres 16 + API (immagine di produzione).
+#   docker compose up -d --build
+#   docker compose exec api node dist/prisma/seed.js        # dati di base (+ demo con SEED_DEMO=true)
+#   curl http://localhost:4000/health
+# I valori di default qui sotto vanno bene SOLO in locale: in produzione usa segreti veri
+# (vedi docs/DEPLOY.md). Puoi sovrascriverli con un file .env accanto a questo compose.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: tris
+      POSTGRES_PASSWORD: tris
+      POSTGRES_DB: poker_school
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tris -d poker_school"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://tris:tris@db:5432/poker_school
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:4000}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://northnova-studio.github.io,http://localhost:5173}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-solo-locale-cambiami-0123456789abcdefghij}
+      # 32 byte base64 SOLO per uso locale: in produzione `openssl rand -base64 32`
+      KYC_ENC_KEY: ${KYC_ENC_KEY:-bG9jYWxlLXNvbG8tc3ZpbHVwcG8tbm9uLXVzYXJlISE=}
+      KYC_RETENTION_DAYS: ${KYC_RETENTION_DAYS:-30}
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      BUNNY_STREAM_LIBRARY_ID: ${BUNNY_STREAM_LIBRARY_ID:-}
+      BUNNY_STREAM_TOKEN_KEY: ${BUNNY_STREAM_TOKEN_KEY:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@tris.local}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-AdminLocale!2026}
+      SEED_FOUNDER_PASSWORD: ${SEED_FOUNDER_PASSWORD:-FondatoreLocale!2026}
+      SEED_DEMO: ${SEED_DEMO:-true}
+    volumes:
+      - kycdata:/app/storage
+
+volumes:
+  pgdata:
+  kycdata:

@@ -1,0 +1,67 @@
+# Blueprint Render (alternativa a Railway). In Render: New → Blueprint, repository
+# northnova-studio/<repo>, "Blueprint Path" = apps/api/render.yaml.
+# Verifica nomi/prezzi dei piani correnti su render.com prima di applicarlo.
+services:
+  - type: web
+    name: tris-api
+    runtime: docker
+    rootDir: apps/api
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    region: frankfurt
+    plan: starter
+    healthCheckPath: /health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - apps/api/**
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tris-db
+          property: connectionString
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: KYC_ENC_KEY # 32 byte base64 (openssl rand -base64 32): impostala a mano e salvane una copia
+        sync: false
+      - key: PUBLIC_API_URL # es. https://tris-api.onrender.com
+        sync: false
+      - key: FRONTEND_URL # es. https://northnova-studio.github.io/<repo>
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://northnova-studio.github.io
+      - key: STORAGE_DRIVER
+        value: s3
+      - key: S3_ENDPOINT
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: KYC_RETENTION_DAYS
+        value: "30"
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: SEED_FOUNDER_PASSWORD
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: BUNNY_STREAM_LIBRARY_ID
+        sync: false
+      - key: BUNNY_STREAM_TOKEN_KEY
+        sync: false
+
+databases:
+  - name: tris-db
+    region: frankfurt
+    plan: basic-256mb
+    postgresMajorVersion: "16"
+    databaseName: poker_school
